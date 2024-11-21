@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const mySqlPool = require("./config/db");
 const dotenv = require("dotenv");
-const cors = require("cors"); // Import CORS
+const cors = require("cors");
 dotenv.config();
 
 const PORT = process.env.PORT || 8000;
@@ -10,8 +10,7 @@ const bodyParser = require("body-parser");
 const productRoute = require("./routes/product");
 const userRoute = require("./routes/user");
 
-// Enable CORS for all origins (or restrict to your frontend URL)
-app.use(cors()); // Allow all origins for testing. You can restrict this later.
+app.use(cors());
 
 app.use(bodyParser.json());
 
