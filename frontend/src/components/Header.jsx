@@ -27,7 +27,7 @@ import {
   PlayCircleIcon,
 } from "@heroicons/react/20/solid";
 import cookies from "js-cookie";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const products = [
   {
@@ -90,14 +90,13 @@ export default function Header() {
         className="mx-auto flex max-w-7xl items-center justify-between py-6 px-2 md:px-0"
       >
         <div className="flex lg:flex-1">
-          <a href="#">
-            {/* <span className="sr-only">Your Company</span> */}
+          <Link to={"/app/main"}>
             <img
               alt=""
               src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=600"
               className="h-8 w-auto"
             />
-          </a>
+          </Link>
         </div>
         <div className="flex lg:hidden">
           <button
@@ -110,6 +109,28 @@ export default function Header() {
           </button>
         </div>
         <PopoverGroup className="hidden lg:flex lg:gap-x-12">
+          <Link to={"/app/main"} className="text-sm/6 font-semibold text-white">
+            Home Page
+          </Link>
+
+          <Link to={"about-us"} className="text-sm/6 font-semibold text-white">
+            About
+          </Link>
+
+          <Link to={"cart"} className="text-sm/6 font-semibold text-white">
+            Basket
+          </Link>
+
+          <Link to={"orders"} className="text-sm/6 font-semibold text-white">
+            Orders
+          </Link>
+
+          <Link
+            to={"contact-us"}
+            className="text-sm/6 font-semibold text-white"
+          >
+            Contact Us
+          </Link>
           <Popover className="relative">
             <PopoverButton className="flex items-center gap-x-1 text-sm/6 font-semibold text-white">
               Product
@@ -165,16 +186,6 @@ export default function Header() {
               </div>
             </PopoverPanel>
           </Popover>
-
-          <a href="#" className="text-sm/6 font-semibold text-white">
-            Features
-          </a>
-          <a href="#" className="text-sm/6 font-semibold text-white">
-            Marketplace
-          </a>
-          <a href="#" className="text-sm/6 font-semibold text-white">
-            Company
-          </a>
         </PopoverGroup>
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
           <button
