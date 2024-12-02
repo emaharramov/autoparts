@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 8000;
 const bodyParser = require("body-parser");
 const productRoute = require("./routes/product");
 const userRoute = require("./routes/user");
+const orderRoutes = require("./routes/orderRoutes");
 
 app.use(cors());
 
@@ -17,6 +18,7 @@ app.use(bodyParser.json());
 // Routes
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/products", productRoute);
+app.use("/api/v1/orders", orderRoutes);
 
 // Database Connection & Server Start
 mySqlPool
