@@ -16,13 +16,13 @@ const Main = () => {
   const [selectedManufacturer, setSelectedManufacturer] = useState("all"); // Seçilen üretici
   const [filteredData, setFilteredData] = useState(data); // Filtrelenmiş ürünler
 
-  // Dinamik üretici listesi oluşturma
+  // Dynamic list of manufacturers
   const manufacturers = [
     "all",
     ...new Set(data.map((item) => item.manufacturer)),
   ];
 
-  // Arama ve filtreleme işlemi
+  // Handle filtering
   useEffect(() => {
     let filtered = data;
 
@@ -44,7 +44,7 @@ const Main = () => {
     setFilteredData(filtered);
   }, [searchTerm, selectedManufacturer]);
 
-  // En ucuz ürünü bulma
+  // Find cheapest product from the filtered list
   const getCheapestProducts = (filtered) => {
     return filtered.length > 0
       ? [
@@ -55,19 +55,33 @@ const Main = () => {
       : [];
   };
 
-  // Sepete ekleme işlemi
-  const handleAddToCart = (product) => {
-    dispatch(addToCart(product)); // Sepete ekle
-    toast.success(`${product.name} sepete eklendi!`, {
+  const handleAddToCart = (product, quantity) => {
+    const productWithQuantity = { ...product, quantity }; // Ürünü ve miktarı birlikte gönder
+    dispatch(addToCart(productWithQuantity)); // Sepete ekle
+    toast.success(`${product.name} (${quantity} adet) sepete eklendi!`, {
       position: "top-right",
       autoClose: 3000,
     }); // Success toast
   };
 
-  // Filtreleri temizleme
+  // Clear filters
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedManufacturer("all");
+  };
+
+  // Handle quantity change
+  const handleQuantityChange = (e, productId) => {
+    const newQuantity = parseInt(e.target.value);
+    if (newQuantity >= 1) {
+      setFilteredData((prevData) =>
+        prevData.map((product) =>
+          product.id === productId
+            ? { ...product, selectedQuantity: newQuantity }
+            : product
+        )
+      );
+    }
   };
 
   return (
@@ -75,7 +89,7 @@ const Main = () => {
       <h1 className="text-2xl font-bold mb-6">Ürün Listesi</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Filtreleme Alanı */}
+        {/* Filter Area */}
         <div className="lg:col-span-1 mb-6">
           <input
             type="text"
@@ -103,7 +117,7 @@ const Main = () => {
           </button>
         </div>
 
-        {/* Ürün Listesi */}
+        {/* Product List */}
         <div className="lg:col-span-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredData.length === 0 ? (
@@ -117,7 +131,7 @@ const Main = () => {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
                   >
-                    {/* Ürün görseli */}
+                    {/* Product Image */}
                     {product.imageUrl ? (
                       <img
                         src={product.imageUrl}
@@ -163,12 +177,63 @@ const Main = () => {
                         {product.stok ? "Mevcut" : "Stokta Yok"}
                       </div>
                     </Link>
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="bg-blue-500 text-white p-2 rounded mt-4"
-                    >
-                      Sepete Ekle
-                    </button>
+
+                      <div className="flex items-center justify-between ">
+                        {/* Quantity Selection */}
+                        <div className="mt-4 flex justify-center gap-x-2 items-center">
+                          <button
+                            onClick={() => {
+                              const newQuantity =
+                                (product.selectedQuantity || 1) > 1
+                                  ? product.selectedQuantity - 1
+                                  : 1;
+                              setFilteredData((prevData) =>
+                                prevData.map((p) =>
+                                  p.id === product.id
+                                    ? { ...p, selectedQuantity: newQuantity }
+                                    : p
+                                )
+                              );
+                            }}
+                            className="bg-gray-300 text-gray-600 px-3 py-2 rounded"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            value={product.selectedQuantity || 1}
+                            min="1"
+                            onChange={(e) => handleQuantityChange(e, product.id)}
+                            className="w-12 text-center border border-gray-300 p-2 rounded"
+                          />
+                          <button
+                            onClick={() => {
+                              const newQuantity =
+                                (product.selectedQuantity || 1) + 1;
+                              setFilteredData((prevData) =>
+                                prevData.map((p) =>
+                                  p.id === product.id
+                                    ? { ...p, selectedQuantity: newQuantity }
+                                    : p
+                                )
+                              );
+                            }}
+                            className="bg-gray-300 text-gray-600 px-3 py-2 rounded"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        {/* Add to Cart Button */}
+                        <button
+                          onClick={() =>
+                            handleAddToCart(product, product.selectedQuantity || 1)
+                          }
+                          className="bg-blue-500 text-white p-2 rounded mt-4"
+                        >
+                          Sepete Ekle
+                        </button>
+                      </div>
                   </motion.div>
                 </LazyLoad>
               ))

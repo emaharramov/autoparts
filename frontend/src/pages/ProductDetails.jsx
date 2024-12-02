@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../redux/cartSlice.js"; // Sepete ekleme action'ı
@@ -22,13 +22,30 @@ const ProductDetails = () => {
     );
   }
 
+  // Miktar durumu
+  const [quantity, setQuantity] = useState(1);
+
   // Sepete ekleme işlevi
   const handleAddToCart = () => {
-    dispatch(addToCart(product)); // Redux store'a ekler
-    toast.success(`${product.name} sepete eklendi!`, {
+    // Miktar kadar ürün ekle
+    const productWithQuantity = { ...product, quantity };
+    dispatch(addToCart(productWithQuantity)); // Redux store'a ekler
+    toast.success(`${product.name} (${quantity} adet) sepete eklendi!`, {
       position: "top-right",
       autoClose: 3000,
     }); // Success toast
+  };
+
+  // Miktar artırma
+  const increaseQuantity = () => {
+    setQuantity((prevQuantity) => prevQuantity + 1);
+  };
+
+  // Miktar azaltma
+  const decreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity((prevQuantity) => prevQuantity - 1);
+    }
   };
 
   return (
@@ -95,8 +112,25 @@ const ProductDetails = () => {
             </div>
           </div>
 
+          {/* Miktar Kontrolü */}
+          <div className="mt-4 flex items-center gap-4">
+            <button
+              onClick={decreaseQuantity}
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg"
+            >
+              -
+            </button>
+            <span className="text-xl">{quantity}</span>
+            <button
+              onClick={increaseQuantity}
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg"
+            >
+              +
+            </button>
+          </div>
+
           {/* Sepete Ekle Butonu */}
-          <div className="mt-8 float-end">
+          <div className="mt-8">
             <button
               onClick={handleAddToCart}
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold shadow-md"

@@ -31,12 +31,18 @@ const Cart = () => {
             key={product.id}
             className="flex justify-between items-center bg-white p-4 border rounded-lg mb-4 shadow-md"
           >
-            <div className="flex items-center">
-              <img
-                src={product.imageUrl || "default-image-url.jpg"}
-                alt={product.name}
-                className="w-16 h-16 object-contain mr-4"
-              />
+            <div className="flex gap-x-6 items-center">
+              {product.imageUrl ? (
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="w-full h-40 object-contain mt-4"
+                />
+              ) : (
+                <div className="w-40 h-40 bg-gray-300 mt-4 flex items-center justify-center text-gray-700">
+                  Görsel Bulunamadı
+                </div>
+              )}
               <div>
                 <p className="text-lg font-semibold">{product.name}</p>
                 <p>{product.manufacturer}</p>

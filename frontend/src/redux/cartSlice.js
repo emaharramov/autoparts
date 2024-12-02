@@ -16,27 +16,51 @@ const cartSlice = createSlice({
       );
 
       if (existingItem) {
-        existingItem.quantity += 1;
+        // Ürün zaten sepette var, miktarını arttır
+        existingItem.quantity += action.payload.quantity || 1;
       } else {
-        state.items.push({ ...action.payload, quantity: 1 });
+        // Yeni ürün ekle
+        state.items.push({
+          ...action.payload,
+          quantity: action.payload.quantity || 1,
+        });
       }
 
-      localStorage.setItem("cartItems", JSON.stringify(state.items)); // localStorage'a kaydet
+      // only save to localStorage when there is a change
+      localStorage.setItem("cartItems", JSON.stringify(state.items));
     },
 
     // Sepetten ürün silmek
     removeFromCart: (state, action) => {
-      state.items = state.items.filter((item) => item.id !== action.payload.id);
-      localStorage.setItem("cartItems", JSON.stringify(state.items)); // localStorage'a kaydet
+      const updatedItems = state.items.filter(
+        (item) => item.id !== action.payload.id
+      );
+      if (updatedItems.length !== state.items.length) {
+        // Eğer sepet değiştiyse localStorage'ı güncelle
+        state.items = updatedItems;
+        localStorage.setItem("cartItems", JSON.stringify(state.items));
+      }
     },
 
     // Sepetteki ürünü güncellemek (quantity artırma/azaltma)
     updateQuantity: (state, action) => {
       const item = state.items.find((item) => item.id === action.payload.id);
+
       if (item) {
-        item.quantity = action.payload.quantity;
+        const newQuantity = action.payload.quantity;
+
+        // Eğer quantity sıfır veya daha az ise, ürünü sepetten çıkar
+        if (newQuantity <= 0) {
+          state.items = state.items.filter(
+            (item) => item.id !== action.payload.id
+          );
+        } else {
+          item.quantity = newQuantity;
+        }
+
+        // Eğer sepet değiştiyse localStorage'ı güncelle
+        localStorage.setItem("cartItems", JSON.stringify(state.items));
       }
-      localStorage.setItem("cartItems", JSON.stringify(state.items)); // localStorage'a kaydet
     },
   },
 });
