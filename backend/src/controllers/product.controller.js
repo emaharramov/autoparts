@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../config/cloudinary');
 
 const prisma = new PrismaClient();
 
@@ -8,7 +9,7 @@ const getAllProducts = async (req, res) => {
             page = 1, 
             limit = 10, 
             search = '',
-            manufacturerId,
+            manufacturer = '',
             inStock
         } = req.query;
 
@@ -26,8 +27,10 @@ const getAllProducts = async (req, res) => {
             ]
         };
 
-        if (manufacturerId) {
-            where.AND.push({ manufacturerId });
+        if (manufacturer) {
+            where.AND.push({ 
+                manufacturer: { contains: manufacturer, mode: 'insensitive' }
+            });
         }
 
         if (inStock !== undefined) {
@@ -39,13 +42,6 @@ const getAllProducts = async (req, res) => {
                 skip,
                 take: Number(limit),
                 where,
-                include: {
-                    manufacturer: {
-                        select: {
-                            name: true
-                        }
-                    }
-                },
                 orderBy: {
                     name: 'asc'
                 }
@@ -55,9 +51,9 @@ const getAllProducts = async (req, res) => {
 
         res.json({
             products,
+            total,
             totalPages: Math.ceil(total / Number(limit)),
-            currentPage: Number(page),
-            total
+            currentPage: Number(page)
         });
     } catch (err) {
         console.error(err);
@@ -68,14 +64,7 @@ const getAllProducts = async (req, res) => {
 const getProductById = async (req, res) => {
     try {
         const product = await prisma.product.findUnique({
-            where: { id: req.params.id },
-            include: {
-                manufacturer: {
-                    select: {
-                        name: true
-                    }
-                }
-            }
+            where: { id: req.params.id }
         });
 
         if (!product) {
@@ -100,43 +89,48 @@ const createProduct = async (req, res) => {
             priceWithKDV,
             discount,
             iskonto,
-            manufacturerId,
+            manufacturer,
             stock
         } = req.body;
 
-        const existingProduct = await prisma.product.findUnique({
-            where: { OemNo }
-        });
-
-        if (existingProduct) {
-            return res.status(400).json({ message: 'Product with this OEM number already exists' });
+        if (!image) {
+            return res.status(400).json({ message: 'Image is required' });
         }
 
-        const product = await prisma.product.create({
-            data: {
-                OemNo,
-                codeOfProduct,
-                image,
-                name,
-                price,
-                priceWithKDV,
-                discount,
-                iskonto,
-                manufacturerId,
-                stock: stock ?? true
-            },
-            include: {
-                manufacturer: {
-                    select: {
-                        name: true
-                    }
-                }
-            }
-        });
+        try {
+            const imageUrl = await uploadToCloudinary(image);
 
-        res.status(201).json(product);
+            const existingProduct = await prisma.product.findUnique({
+                where: { OemNo }
+            });
+
+            if (existingProduct) {
+                await deleteFromCloudinary(imageUrl);
+                return res.status(400).json({ message: 'Product with this OEM number already exists' });
+            }
+
+            const product = await prisma.product.create({
+                data: {
+                    OemNo: String(OemNo),
+                    codeOfProduct: String(codeOfProduct),
+                    image: imageUrl,
+                    name: String(name || 'no name'),
+                    price: Number(price),
+                    priceWithKDV: Number(priceWithKDV),
+                    discount: Number(discount || 0),
+                    iskonto: iskonto ? String(iskonto) : null,
+                    manufacturer: manufacturer ? String(manufacturer) : '',
+                    stock: Boolean(stock)
+                }
+            });
+
+            res.status(201).json(product);
+        } catch (uploadError) {
+            console.error('Upload error:', uploadError);
+            res.status(500).json({ message: 'Error uploading image' });
+        }
     } catch (err) {
-        console.error(err);
+        console.error('Create product error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -152,7 +146,7 @@ const updateProduct = async (req, res) => {
             priceWithKDV,
             discount,
             iskonto,
-            manufacturerId,
+            manufacturer,
             stock
         } = req.body;
 
@@ -164,36 +158,28 @@ const updateProduct = async (req, res) => {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        if (OemNo && OemNo !== existingProduct.OemNo) {
-            const duplicateOem = await prisma.product.findUnique({
-                where: { OemNo }
-            });
-
-            if (duplicateOem) {
-                return res.status(400).json({ message: 'Product with this OEM number already exists' });
+        let imageUrl;
+        if (image) {
+            imageUrl = await uploadToCloudinary(image);
+            
+            if (existingProduct.image) {
+                await deleteFromCloudinary(existingProduct.image);
             }
         }
 
         const product = await prisma.product.update({
             where: { id: req.params.id },
             data: {
-                OemNo,
-                codeOfProduct,
-                image,
-                name,
-                price,
-                priceWithKDV,
-                discount,
-                iskonto,
-                manufacturerId,
-                stock
-            },
-            include: {
-                manufacturer: {
-                    select: {
-                        name: true
-                    }
-                }
+                ...(OemNo && { OemNo: String(OemNo) }),
+                ...(codeOfProduct && { codeOfProduct: String(codeOfProduct) }),
+                ...(imageUrl && { image: imageUrl }),
+                ...(name && { name: String(name) }),
+                ...(price && { price: Number(price) }),
+                ...(priceWithKDV && { priceWithKDV: Number(priceWithKDV) }),
+                ...(discount && { discount: Number(discount) }),
+                ...(iskonto && { iskonto: String(iskonto) }),
+                ...(manufacturer && { manufacturer: String(manufacturer) }),
+                ...(stock !== undefined && { stock: Boolean(stock) })
             }
         });
 
@@ -206,6 +192,18 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
     try {
+        const product = await prisma.product.findUnique({
+            where: { id: req.params.id }
+        });
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        if (product.image) {
+            await deleteFromCloudinary(product.image);
+        }
+
         await prisma.product.delete({
             where: { id: req.params.id }
         });
@@ -213,9 +211,6 @@ const deleteProduct = async (req, res) => {
         res.json({ message: 'Product deleted successfully' });
     } catch (err) {
         console.error(err);
-        if (err.code === 'P2025') {
-            return res.status(404).json({ message: 'Product not found' });
-        }
         res.status(500).json({ message: 'Server error' });
     }
 };

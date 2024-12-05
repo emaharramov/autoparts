@@ -30,14 +30,12 @@ model Product {
   price         Int
   priceWithKDV  Int
   discount      Int        @default(0)
-  iskonto       String
-  manufacturerId String
-  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id])
+  iskonto       String?
+  manufacturer  String?    @default("")
   stock         Boolean    @default(true)
   cartItems     CartItem[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model CartItem {
@@ -51,10 +49,4 @@ model CartItem {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, productId])
-}
-
-model Manufacturer {
-  id       String    @id @default(uuid())
-  name     String
-  products Product[]
 }

@@ -11,7 +11,7 @@ const {
 
 router.get('/', getAllProducts);
 router.get('/:id', getProductById);
-router.post('/', auth, isAdmin, createProduct);
+router.post('/', createProduct);
 router.put('/:id', auth, isAdmin, updateProduct);
 router.delete('/:id', auth, isAdmin, deleteProduct);
 
